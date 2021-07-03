@@ -10,6 +10,17 @@ import (
 	"github.com/juruen/rmapi/log"
 )
 
+func expandTilde(p string) string {
+	if p == "~" || strings.HasPrefix(p, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return p
+		}
+		p = strings.Replace(p, "~", homeDir, 1)
+	}
+	return p
+}
+
 func prefixToDir(s []string) string {
 	isPrefix := len(s) > 0 && s[len(s)-1] != ""
 
@@ -23,7 +34,7 @@ func prefixToDir(s []string) string {
 
 	log.Trace.Println("prefix", prefix)
 
-	fstat, err := os.Stat(prefix)
+	fstat, err := os.Stat(expandTilde(prefix))
 
 	// Prefix matches an entry
 	if err == nil {
@@ -48,7 +59,7 @@ func prefixToDir(s []string) string {
 
 	log.Trace.Println("dir", dir)
 
-	fstat, err = os.Stat(dir)
+	fstat, err = os.Stat(expandTilde(dir))
 
 	if err != nil || !fstat.IsDir() {
 		return ""
@@ -83,7 +94,7 @@ func createFsCompleter(check fileCheckFn) func([]string) []string {
 			return options
 		}
 
-		entries, err := ioutil.ReadDir(dir)
+		entries, err := ioutil.ReadDir(expandTilde(dir))
 
 		if err != nil {
 			return options
@@ -95,7 +106,7 @@ func createFsCompleter(check fileCheckFn) func([]string) []string {
 			}
 
 			var entry string
-			if info, err := os.Stat(dir + "/" + n.Name()); err == nil && info.IsDir() {
+			if info, err := os.Stat(expandTilde(dir + "/" + n.Name())); err == nil && info.IsDir() {
 				entry = fmt.Sprintf("%s/", n.Name())
 			} else {
 				entry = fmt.Sprintf("%s", n.Name())
