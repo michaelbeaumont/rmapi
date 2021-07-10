@@ -152,6 +152,27 @@ func (z *Zip) readPayload(zr *zip.Reader) error {
 	return nil
 }
 
+func readDataForPage(file *zip.File) (*rm.Rm, error) {
+	r, err := file.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	bytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var data *rm.Rm
+
+	if err := data.UnmarshalBinary(bytes); err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // readData extracts existing .rm files from an archive.
 func (z *Zip) readData(zr *zip.Reader) error {
 	files, err := zipExtFinder(zr, ".rm")
@@ -171,21 +192,14 @@ func (z *Zip) readData(zr *zip.Reader) error {
 			return errors.New("page not found")
 		}
 
-		r, err := file.Open()
+		page := z.Pages[idx]
+
+		data, err := readDataForPage(file)
 		if err != nil {
 			return err
 		}
 
-		bytes, err := ioutil.ReadAll(r)
-		if err != nil {
-			return err
-		}
-
-		z.Pages[idx].Data = rm.New()
-		z.Pages[idx].Data.UnmarshalBinary(bytes)
-		if err != nil {
-			return err
-		}
+		page.Data = data
 	}
 
 	return nil

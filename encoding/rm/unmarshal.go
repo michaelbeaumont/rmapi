@@ -9,6 +9,10 @@ import (
 // UnmarshalBinary implements encoding.UnmarshalBinary for
 // transforming bytes into a Rm page
 func (rm *Rm) UnmarshalBinary(data []byte) error {
+	if rm == nil {
+		*rm = *New()
+	}
+
 	r := newReader(data)
 	if err := r.checkHeader(); err != nil {
 		return err
